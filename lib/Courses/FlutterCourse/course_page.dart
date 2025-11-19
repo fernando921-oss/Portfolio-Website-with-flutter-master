@@ -1,9 +1,17 @@
+import 'dart:ui';
+
+import 'dart:html' as html;
+
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:video01_portfolio_website/features/home/presentation/home_course_list.dart';
 
 import '../../features/home/presentation/course.dart';
 import '../../features/home/presentation/course_data.dart';
-import '../../Courses/FlutterCourse/fluttercourse_data.dart';
+import '../../Courses/FlutterCourse/all_course_data.dart';
 
 
 import '../../features/home/presentation/course_item.dart';
@@ -13,7 +21,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/appbar/background_blur.dart';
 import '../../widgets/appbar/drawer_menue.dart';
 import '../../widgets/appbar/my_app_bar.dart';
-import 'fluttercourse_data.dart';
+import 'all_course_data.dart';
 // Assuming the mock dependencies are available via a file or package
 // If using the dependencies.dart file, you would import it here:
 // import 'dependencies.dart';
@@ -72,19 +80,55 @@ class CourseDetailPageContent extends StatelessWidget {
           ),
           const SizedBox(height: 30),
 
-          // --- Placeholder for Video/Lecture Content ---
-          Container(
-            height: 600,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: BorderRadius.circular(12),
+
+        Container(
+          height: 800,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF1E1E1E),
+                Color(0xFF2C2C2C),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: Center(
-              child: FlutterHomeCourseListDesktop(course: course,)
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 20,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                scrollbars: true,
+                dragDevices: {
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.trackpad,
+                },
+              ),
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: AllCourseListAccessPoint(course: course),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 40),
+        ),
+
+
+
+
+
+        const SizedBox(height: 40),
 
           // --- Related Courses Section Title ---
           Text(
@@ -211,82 +255,333 @@ class _CoursePageState extends State<CoursePage> {
     );
   }
 }
-class FlutterHomeCourseListDesktop extends StatelessWidget {
+
+class RelatedCourseListDesktopMode extends StatelessWidget {
   final Course course;
 
-  const FlutterHomeCourseListDesktop({
+  const RelatedCourseListDesktopMode({
     super.key,
     required this.course,
   });
 
-  // ✅ Get only related courses (exclude current)
-  List<Course> get _relatedFlutterCourses {
-    return FluttercourseData.allCourses
-        .where((c) => c.id == course.id)
-        .take(6)
-        .toList();
+  // Show ALL courses (for testing)
+  List<Course> get _relatedCourseData {
+    return AllcourseData.allCourses.where((c) => c.id == course.id).take(10).toList();
   }
 
+  // Handle course tap: YouTube for free, payment for paid
+  Future<void> _handleCourseTap(BuildContext context, Course item) async {
+    if (item.isPaid) {
+      const paymentUrl = "https://your-payment-portal.com"; // replace with your payment link
+      if (kIsWeb) {
+        html.window.open(paymentUrl, '_blank');
+      } else {
+        if (!await launchUrlString(paymentUrl, mode: LaunchMode.externalApplication)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Could not open payment portal")),
+          );
+        }
+      }
+    } else {
+      // Free course → open YouTube
+      if (!await launchUrlString(item.youtubeUrl, mode: LaunchMode.externalApplication)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not open YouTube video")),
+        );
+      }
+    }
+  }
 
   final double columnSpacing = 20.0;
   final double rowSpacing = 20.0;
 
-  Widget _buildCourseRow(BuildContext context, int startIndex) {
-    const int itemsPerRow = 3;
-    final List<Widget> rowItems = [];
-
-    for (int i = 0; i < itemsPerRow; i++) {
-      final int dataIndex = startIndex + i;
-
-      if (dataIndex < _relatedFlutterCourses.length) {
-        final Course item = _relatedFlutterCourses[dataIndex];
-
-        rowItems.add(
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: i < 2 ? columnSpacing : 0),
-              child: CourseItem(
-                isMobile: false,
-                imageUrl: item.imageUrl,
-                title: item.title,
-                description: item.description,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CoursePage(course: item),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      } else {
-        rowItems.add(const Expanded(child: SizedBox.shrink()));
-      }
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: rowItems,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final int totalItems = _relatedFlutterCourses.length;
+    const int itemsPerRow = 3;
+
+    final courses = _relatedCourseData;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
       child: Column(
         children: [
-          _buildCourseRow(context, 0),
+          if (courses.isEmpty)
+            const Text("No courses found", style: TextStyle(color: Colors.red)),
 
-          if (totalItems > 3) SizedBox(height: rowSpacing),
-          if (totalItems > 3) _buildCourseRow(context, 3),
+          for (int i = 0; i < courses.length; i += itemsPerRow)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: i + itemsPerRow < courses.length ? rowSpacing : 0,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: List.generate(itemsPerRow, (index) {
+                  final dataIndex = i + index;
+
+                  if (dataIndex < courses.length) {
+                    final item = courses[dataIndex];
+
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                            right: index < itemsPerRow - 1 ? columnSpacing : 0),
+                        child: Stack(
+                          children: [
+                            CourseItem(
+                              isMobile: false,
+                              imageUrl: item.imageUrl,
+                              title: item.title,
+                              description: item.description,
+                              onTap: () => _handleCourseTap(context, item),
+                            ),
+
+                            // === Beautiful Paid Badge ===
+                            if (item.isPaid)
+                              Positioned(
+                                top: 10,
+                                left: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent.withOpacity(0.85),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        blurRadius: 4,
+                                        offset: Offset(2, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: const [
+                                      Icon(Icons.lock, color: Colors.white, size: 16),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        "Paid Video",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+
+                      ),
+                    );
+                  } else {
+                    return const Expanded(child: SizedBox.shrink());
+                  }
+                }),
+              ),
+            ),
         ],
       ),
     );
+  }
+}
+
+class RelatedCourseListMobileMode extends StatelessWidget {
+  final Course course;
+
+  const RelatedCourseListMobileMode({
+    super.key,
+    required this.course,
+  });
+
+  // Show ALL courses (testing)
+  List<Course> get _relatedFlutterCourses {
+    return AllcourseData.allCourses
+        .where((c) => c.id == course.id)
+        .take(10)
+        .toList();
+  }
+
+  Future<void> _handleCourseTap(BuildContext context, Course item) async {
+    if (item.isPaid) {
+      const paymentUrl = "https://your-payment-portal.com";
+
+      if (!await launchUrlString(paymentUrl, mode: LaunchMode.externalApplication)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not open payment portal")),
+        );
+      }
+      return;
+    }
+
+    // free → YouTube
+    if (!await launchUrlString(item.youtubeUrl, mode: LaunchMode.externalApplication)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Could not open YouTube video")),
+      );
+    }
+  }
+
+  final double columnSpacing = 12.0;
+  final double rowSpacing = 18.0;
+
+  @override
+  Widget build(BuildContext context) {
+    const int itemsPerRow = 2; // Mobile grid
+    final courses = _relatedFlutterCourses;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      child: Column(
+        children: [
+          if (courses.isEmpty)
+            const Text(
+              "No courses found",
+              style: TextStyle(color: Colors.red),
+            ),
+
+          // --- GRID LOOP ---
+          for (int i = 0; i < courses.length; i += itemsPerRow)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: (i + itemsPerRow < courses.length) ? rowSpacing : 0,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: List.generate(itemsPerRow, (index) {
+                  final dataIndex = i + index;
+
+                  if (dataIndex < courses.length) {
+                    final item = courses[dataIndex];
+
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: index < itemsPerRow - 1 ? columnSpacing : 0,
+                        ),
+
+                        // ✔ Stack sits inside BEAUTIFUL CARD
+                        child: _MobileCourseCard(
+                          child: Stack(
+                            children: [
+                              CourseItem(
+                                isMobile: true,
+                                imageUrl: item.imageUrl,
+                                title: item.title,
+                                description: item.description,
+                                onTap: () => _handleCourseTap(context, item),
+                              ),
+
+                              // ---- BEAUTIFUL PAID BADGE ----
+                              if (item.isPaid)
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFFF7D358),
+                                          Color(0xFFFACC2E),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 4,
+                                          offset: const Offset(2, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Text(
+                                      "PAID",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  } else {
+                    return const Expanded(child: SizedBox());
+                  }
+                }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// --------------------------
+///  BEAUTIFUL MOBILE CARD UI
+/// --------------------------
+class _MobileCourseCard extends StatelessWidget {
+  final Widget child;
+
+  const _MobileCourseCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 8,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
+            color: Colors.black.withOpacity(0.10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: child,
+      ),
+    );
+  }
+}
+
+
+class AllCourseListAccessPoint extends StatelessWidget {
+  final Course course;
+  const AllCourseListAccessPoint({super.key, required this.course});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Define a breakpoint for switching between desktop and mobile layout
+    const double mobileBreakpoint = 600.0;
+    return Column(
+
+      children: [
+        // Responsive check: Use desktop layout for wider screens, mobile for smaller
+        if (screenWidth > mobileBreakpoint)
+          RelatedCourseListDesktopMode(course: course)
+        else
+           RelatedCourseListMobileMode(course: course,),
+      ],
+
+
+    );
+
+
+
   }
 }

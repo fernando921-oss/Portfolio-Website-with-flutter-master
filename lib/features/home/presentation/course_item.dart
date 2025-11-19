@@ -19,6 +19,7 @@ class CourseItem extends StatefulWidget {
   final String description;
   final bool isMobile;
   final VoidCallback? onTap;
+  final bool isLocked;
 
   const CourseItem({
     super.key,
@@ -27,6 +28,7 @@ class CourseItem extends StatefulWidget {
     required this.description,
     this.isMobile = false,
     this.onTap,
+    this.isLocked = false, // ✅ NEW
   });
 
   @override
