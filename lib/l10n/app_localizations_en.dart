@@ -15,8 +15,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courses => 'Courses';
 
   @override
-  String get blog => 'Blog';
+  String get online => 'Online Class';
 
   @override
-  String get aboutMe => 'About Me';
+  String get aboutMe => 'About Us';
+
+  @override
+  String get extortioner => 'Learn Math and Code';
+
+  @override
+  String get contact => 'Contact Me';
 }

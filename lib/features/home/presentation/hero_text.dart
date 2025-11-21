@@ -155,7 +155,7 @@ class HeroTexts extends StatelessWidget {
         ),
         SizedBox(height: 8),
         Text(
-          "Learn Math and Code",
+          context.texts.extortioner,
           style: context.textStyle.titleMdMedium.copyWith(
             color: context.colorscheme.onBackground,
           ),

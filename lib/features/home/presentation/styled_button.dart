@@ -3,16 +3,18 @@ import 'package:video01_portfolio_website/extensions.dart';
 
 import '../../../styles/app_colors.dart';
 import '../../../widgets/appbar/seo_text.dart';
+import 'home_course_list.dart';
 
 
 class PrimaryButton extends StatelessWidget {
   final String title;
-  const PrimaryButton({super.key, required this.title});
+  final VoidCallback? onPressed;
+  const PrimaryButton({super.key, required this.title, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: () {},
+      onPressed: onPressed,
       child: Text(
         title,
         style: TextStyle(
@@ -26,12 +28,13 @@ class PrimaryButton extends StatelessWidget {
 
 class OutlineButton extends StatelessWidget {
   final String title;
-  const OutlineButton({super.key, required this.title});
+  final VoidCallback? onPressed;
+  const OutlineButton({super.key, required this.title, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return OutlinedButton(
-      onPressed: () {},
+      onPressed: onPressed,
       child: SEOText(
         title,
         style: TextStyle(

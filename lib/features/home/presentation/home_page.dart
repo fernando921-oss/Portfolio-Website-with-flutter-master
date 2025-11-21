@@ -6,14 +6,18 @@ import 'package:video01_portfolio_website/widgets/appbar/background_blur.dart';
 import 'package:video01_portfolio_website/widgets/appbar/drawer_menue.dart';
 import 'package:video01_portfolio_website/widgets/appbar/my_app_bar.dart';
 
+import 'firestore_test.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _coursesKey = GlobalKey();
   @override
   Widget build(BuildContext context) {
     final ValueNotifier<bool> drawerNotifier = ValueNotifier(false);
@@ -67,11 +71,13 @@ class _HomePageState extends State<HomePage> {
             child: Container(
               constraints: BoxConstraints(maxWidth: Insets.maxwidth),
               child: CustomScrollView(
+                controller: _scrollController,
                 slivers: [
                   SliverToBoxAdapter(
                     child: SizedBox(height: 650, child: HeroWidget()),
                   ),
                   SliverToBoxAdapter(
+                    key: _coursesKey,
                     child: SizedBox(height: 6000, child: HomeCourseList()),
                   ),
 
@@ -90,4 +96,15 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+  /// Function to scroll to course section
+  void scrollToCourses() {
+    Scrollable.ensureVisible(
+      _coursesKey.currentContext!,
+      duration: Duration(milliseconds: 600),
+      curve: Curves.easeInOut,
+    );
+  }
+
 }
+
+

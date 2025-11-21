@@ -2,6 +2,8 @@
   "@@locale": "en",
   "home": "Home",
   "courses": "Courses",
-  "blog": "Blog",
-  "aboutMe": "About Me"
+  "online": "Online Class",
+  "aboutMe": "About Us",
+  "extortioner" :"Learn Math and Code",
+  "contact": "Contact Me"
 }

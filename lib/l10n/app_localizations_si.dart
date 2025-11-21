@@ -12,11 +12,17 @@ class AppLocalizationsSi extends AppLocalizations {
   String get home => 'මුල් පිටුව';
 
   @override
-  String get courses => 'පාඨමාලා';
+  String get courses => 'විෂය පථයන්';
 
   @override
-  String get blog => 'බ්ලොග්';
+  String get online => 'Online ක්ලාසස්';
 
   @override
-  String get aboutMe => 'මම ගැන';
+  String get aboutMe => 'විස්තර ';
+
+  @override
+  String get extortioner => 'ගණිතය සහ මෘදුකාංග කේතකරණය උගනිමු';
+
+  @override
+  String get contact => 'අමතන්න';
 }

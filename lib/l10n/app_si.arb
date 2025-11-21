@@ -1,7 +1,9 @@
 {
   "@@locale": "si",
   "home": "මුල් පිටුව",
-  "courses": "පාඨමාලා",
-  "blog": "බ්ලොග්",
-  "aboutMe": "මම ගැන"
+  "courses": "විෂය පථයන්",
+  "online": "Online ක්ලාසස්",
+  "aboutMe": "විස්තර ",
+  "extortioner": "ගණිතය සහ මෘදුකාංග කේතකරණය උගනිමු",
+  "contact": "අමතන්න"
 }

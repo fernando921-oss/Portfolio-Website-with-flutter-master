@@ -5,8 +5,10 @@ import 'package:video01_portfolio_website/features/home/presentation/course_item
 
 import '../../../Courses/FlutterCourse/course_page.dart';
 import '../../../styles/app_size.dart';
+import 'all_course_data.dart';
+
 import 'course.dart';
-import 'course_data.dart';
+
 
 class HomeCourseList extends StatelessWidget {
   const HomeCourseList({super.key});
@@ -40,16 +42,41 @@ class HomeCourseList extends StatelessWidget {
 
 // Assuming Course, CourseData, CourseItem, CoursePage, and context extensions are imported
 
+// Assuming your Course model now looks something like this:
+/*
+class Course {
+  final int id;
+  final String titleEn;
+  final String titleSi;
+  final String descriptionEn;
+  final String descriptionSi;
+  final String imageUrl;
+  final String youtubeUrl;
+  final List<Videos> videos; // Videos is the new SubCourse/lessons model
+  // ... constructor
+}
+*/
+
 class HomeCourseListDesktop extends StatelessWidget {
   const HomeCourseListDesktop({super.key});
 
-  final List<Course> courses = CourseData.allCourses;
   final double columnSpacing = 20.0;
   final double rowSpacing = 20.0;
 
-  Widget _buildCourseRow(BuildContext context, int startIndex) {
+  /// MODIFIED: Now gets the list from the single source.
+  List<Course> _getCourses() {
+    // 1. Get data from the single, merged file.
+    return AllCourseData.allCourses;
+  }
+
+  /// Build one row of 3 items
+  Widget _buildCourseRow(
+      BuildContext context, List<Course> courses, int startIndex) {
+    final lang = Localizations.localeOf(context).languageCode;
+    final isSinhala = lang == "si";
+
     final List<Widget> rowItems = [];
-    final int itemsPerRow = 3;
+    const int itemsPerRow = 3;
 
     for (int i = 0; i < itemsPerRow; i++) {
       final int dataIndex = startIndex + i;
@@ -57,24 +84,28 @@ class HomeCourseListDesktop extends StatelessWidget {
       if (dataIndex < courses.length) {
         final Course course = courses[dataIndex];
 
+        // 2. MODIFIED: Select the correct title and description based on language
+        final String title = isSinhala ? course.titleSi : course.titleEn;
+        final String description = isSinhala ? course.descriptionSi : course.descriptionEn;
+
         rowItems.add(
           Expanded(
             child: Padding(
-              // The 'i < 2' check ensures spacing only between the first two items in a 3-item row
               padding: EdgeInsets.only(right: i < 2 ? columnSpacing : 0),
               child: CourseItem(
                 isMobile: false,
                 imageUrl: course.imageUrl,
-                title: course.title,
-                description: course.description,
-
-                // 🚀 NEW: Add the onTap function to navigate
+                title: title, // Use the localized title
+                description: description, // Use the localized description
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      // Pass the specific 'course' object to the destination page
-                      builder: (context) => CoursePage(course: course),
+                      builder: (_) => CoursePage(
+                        course: course,
+                        // 3. MODIFIED: Ensure the case matches (IsSinhala -> isSinhala)
+                        IsSinhala: isSinhala,
+                      ),
                     ),
                   );
                 },
@@ -83,13 +114,11 @@ class HomeCourseListDesktop extends StatelessWidget {
           ),
         );
       } else {
-        // Fill empty slots with Expanded SizedBox to maintain layout structure
         rowItems.add(const Expanded(child: SizedBox.shrink()));
       }
     }
 
     return Row(
-      // Keep the crossAxisAlignment as start to handle cards of different heights
       crossAxisAlignment: CrossAxisAlignment.start,
       children: rowItems,
     );
@@ -97,26 +126,27 @@ class HomeCourseListDesktop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Only shows up to 6 items (two rows)
+    // MODIFIED: Call _getCourses without the context argument
+    final courses = _getCourses();
     final int totalItems = courses.take(6).length;
 
+    // Assuming context.Insets.Padding is defined elsewhere or should be a standard value
+    const double paddingValue = 40.0; // Placeholder value for context.Insets.Padding
+
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: context.Insets.Padding),
+      // NOTE: Replace 'context.Insets.Padding' with a suitable constant or definition
+      padding: const EdgeInsets.symmetric(horizontal: paddingValue),
       child: Column(
         children: [
-          // First row of courses (indices 0, 1, 2)
-          _buildCourseRow(context, 0),
-
-          // Add spacing if there is a second row
+          _buildCourseRow(context, courses, 0),
           if (totalItems > 3) SizedBox(height: rowSpacing),
-
-          // Second row of courses (indices 3, 4, 5)
-          if (totalItems > 3) _buildCourseRow(context, 3),
+          if (totalItems > 3) _buildCourseRow(context, courses, 3),
         ],
       ),
     );
   }
 }
+
 
 // home_course_list_mobile.dart
 
@@ -129,46 +159,57 @@ class HomeCourseListDesktop extends StatelessWidget {
 // import 'models/course.dart';
 // import 'pages/course_page.dart';
 
+
+// Ensure AllCourseData, Course, CourseItem, and CoursePage are imported
+
 class HomeCourseListMobile extends StatelessWidget {
   const HomeCourseListMobile({super.key});
 
-  // Get the data list from the utility class
-  final List<Course> courses = CourseData.allCourses;
+  /// MODIFIED: Now gets the list from the single source AllCourseData.
+  List<Course> _getCourses() {
+    return AllCourseData.allCourses;
+  }
 
   @override
   Widget build(BuildContext context) {
     const double horizontalPadding = 16.0;
     const double verticalSpacing = 16.0;
 
-    // Item count is dynamically based on the list size
-    final int itemCount = courses.length;
+    // MODIFIED: Get data without context, as localization is handled in the UI.
+    final List<Course> courses = _getCourses();
+    final lang = Localizations.localeOf(context).languageCode;
+    final isSinhala = lang == "si";
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: ListView.separated(
-        // Optimization properties
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-
-        itemCount: itemCount,
-        separatorBuilder: (context, index) => const SizedBox(height: verticalSpacing),
-
+        itemCount: courses.length,
+        separatorBuilder: (context, index) =>
+        const SizedBox(height: verticalSpacing),
         itemBuilder: (context, index) {
-          final Course course = courses[index]; // Use the strongly typed Course object
+          final Course course = courses[index];
+
+          // ➡️ MODIFIED: Select the correct title and description based on language
+          final String title = isSinhala ? course.titleSi : course.titleEn;
+          final String description = isSinhala ? course.descriptionSi : course.descriptionEn;
+
 
           return CourseItem(
             isMobile: true,
-            // Access properties directly from the Course object
             imageUrl: course.imageUrl,
-            title: course.title,
-            description: course.description,
-            // 💡 NEW: onTap function for navigation
+            title: title, // Use the localized title
+            description: description, // Use the localized description
             onTap: () {
-              // Navigate to CoursePage, passing the specific course object
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CoursePage(course: course),
+                  builder: (_) => CoursePage(
+                    course: course,
+                    // ➡️ MODIFIED: Ensure the case matches (IsSinhala -> isSinhala)
+                    IsSinhala: isSinhala,
+                  ),
                 ),
               );
             },

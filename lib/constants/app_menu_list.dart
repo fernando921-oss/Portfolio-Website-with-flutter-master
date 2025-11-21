@@ -10,7 +10,7 @@ class AppMenuList{
     return[
       AppMenu(title: context.texts.home, path: Routes.home),
       AppMenu(title: context.texts.courses, path: Routes.courses),
-      AppMenu(title: context.texts.blog, path: Routes.blog),
+      AppMenu(title: context.texts.online, path: Routes.blog),
       AppMenu(title: context.texts.aboutMe, path: Routes.aboutMe),
 
 

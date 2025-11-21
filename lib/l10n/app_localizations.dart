@@ -107,17 +107,29 @@ abstract class AppLocalizations {
   /// **'Courses'**
   String get courses;
 
-  /// No description provided for @blog.
+  /// No description provided for @online.
   ///
   /// In en, this message translates to:
-  /// **'Blog'**
-  String get blog;
+  /// **'Online Class'**
+  String get online;
 
   /// No description provided for @aboutMe.
   ///
   /// In en, this message translates to:
-  /// **'About Me'**
+  /// **'About Us'**
   String get aboutMe;
+
+  /// No description provided for @extortioner.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn Math and Code'**
+  String get extortioner;
+
+  /// No description provided for @contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Me'**
+  String get contact;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

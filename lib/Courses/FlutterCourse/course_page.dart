@@ -7,11 +7,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+
 import 'package:video01_portfolio_website/features/home/presentation/home_course_list.dart';
+import 'package:video01_portfolio_website/features/home/presentation/video.dart';
+
+import '../../features/home/presentation/all_course_data.dart';
 
 import '../../features/home/presentation/course.dart';
-import '../../features/home/presentation/course_data.dart';
-import '../../Courses/FlutterCourse/all_course_data.dart';
+
+
 
 
 import '../../features/home/presentation/course_item.dart';
@@ -21,158 +25,188 @@ import 'package:flutter/material.dart';
 import '../../widgets/appbar/background_blur.dart';
 import '../../widgets/appbar/drawer_menue.dart';
 import '../../widgets/appbar/my_app_bar.dart';
-import 'all_course_data.dart';
-// Assuming the mock dependencies are available via a file or package
-// If using the dependencies.dart file, you would import it here:
-// import 'dependencies.dart';
 
-// --- COURSE DETAIL CONTENT WIDGET (Renders the course data) ---
+
+
+// NOTE: This assumes you have imported the CourseDataEn, CourseDataSi,
+// Course, SubCourse, and the RelatedCourseListDesktopMode classes correctly.
+
+
+
 
 class CourseDetailPageContent extends StatelessWidget {
   final Course course;
+  final bool isSinhala; // Current language (passed from navigation)
 
-  const CourseDetailPageContent({super.key, required this.course});
+  const CourseDetailPageContent({
+    super.key,
+    required this.course,
+    required this.isSinhala,
+  });
 
-  // Example of fetching related courses (excluding the current one)
-  List<Course> get _relatedCourses {
-    return CourseData.allCourses
-        .where((c) => c.id != course.id)
-        .take(6)
-        .toList();
-  }
+  // Get ALL courses from the single source.
+  List<Course> get _allCourses => AllCourseData.allCourses;
 
+  // Get the current course object details (including videos)
+  Course get _currentCourseDetails =>
+      _allCourses.firstWhere((c) => c.id == course.id, orElse: () => course);
 
+  // Related courses (exclude current) - used for the list at the bottom
+  List<Course> get _relatedCourses =>
+      _allCourses.where((c) => c.id != course.id).toList();
 
   @override
   Widget build(BuildContext context) {
     const double horizontalPadding = 16.0;
     const double verticalSpacing = 16.0;
 
+    // --- Localization ---
+    final Course courseData = _currentCourseDetails;
+    final String localizedTitle = isSinhala ? courseData.titleSi : courseData.titleEn;
+    final String localizedDescription = isSinhala ? courseData.descriptionSi : courseData.descriptionEn;
+
+    // --- Course Data for Lessons ---
+    // The lessons list will be the local 'videos' property
+    final List<Videos> localLessons = courseData.videos;
+
+    // The course object used to pass lessons to the list widgets
+    final Course courseWithLessons = courseData; // Already contains the videos
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Course Title and Details (Dynamic Content) ---
-          SizedBox(height: 20,),
+          const SizedBox(height: 20),
+
+          // --- Category Title ---
           Text(
-            course.title,
+            isSinhala ? "සියලුම පාඨමාලා" : "All Courses", // Placeholder category
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFFE0AFFF),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // --- Main Title (Localized) ---
+          Text(
+            localizedTitle,
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.w900, // Use a very heavy weight for impact
-              color: Theme.of(context).colorScheme.primary,
-              letterSpacing: 0.5, // Add subtle spacing to breathe
-              // Optional: Add a subtle shadow if your background is complex
-              // shadows: [
-              //   Shadow(
-              //     offset: Offset(1.0, 1.0),
-              //     blurRadius: 3.0,
-              //     color: Colors.black45,
-              //   ),
-              // ],
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 24),
 
-          // --- Main Description ---
+          // --- Main Description (Localized) ---
           Text(
-            'Welcome to the detailed view for the ${course.title} course! This course focuses on: ${course.description}',
-            style: const TextStyle(fontSize: 18, height: 1.5),
+            localizedDescription,
+            style: const TextStyle(fontSize: 18, height: 1.5, color: Colors.white70),
           ),
           const SizedBox(height: 30),
 
-
-        Container(
-          height: 800,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF1E1E1E),
-                Color(0xFF2C2C2C),
+          // -------------------------------------------------------------
+          // 1. RESTORED: All Course List Container (The Lessons List)
+          // -------------------------------------------------------------
+          Container(
+            height: 800,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E1E1E), Color(0xFF2C2C2C)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
               ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.4),
-                blurRadius: 20,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(
-                scrollbars: true,
-                dragDevices: {
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.trackpad,
-                },
-              ),
-              child: SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: AllCourseListAccessPoint(course: course),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  scrollbars: true,
+                  dragDevices: {
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.trackpad,
+                  },
+                ),
+                child: SingleChildScrollView( // Provides inner scrolling for lessons
+                  physics: const ClampingScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    // Use the modified list component for lessons
+                    child: localLessons.isEmpty
+                        ? Center(child: Text(isSinhala ? "පාඩම් නැත" : "No Lessons", style: TextStyle(color: Colors.white70)))
+                        : AllCourseListAccessPoint(course: courseWithLessons),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 40),
 
+          // -------------------------------------------------------------
+          // 2. RESTORED: Related Courses List
+          // -------------------------------------------------------------
 
-
-
-
-        const SizedBox(height: 40),
-
-          // --- Related Courses Section Title ---
+          // --- Related Courses Title ---
           Text(
-            'More Courses Like This',
+            isSinhala ? "මෙම පාඨමාලා සමානව" : "More Courses Like This",
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 20),
 
-          // --- RELATED COURSE CARDS (Vertical List) ---
+          // --- Related Courses List ---
           ListView.separated(
             shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(), // Important for nested scrolling
-
+            // Since the entire CoursePage should be in a SingleChildScrollView,
+            // NeverScrollableScrollPhysics is correct here.
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: _relatedCourses.length,
-            separatorBuilder: (context, index) => const SizedBox(height: verticalSpacing),
-
+            separatorBuilder: (context, index) =>
+            const SizedBox(height: verticalSpacing),
             itemBuilder: (context, index) {
-              final Course relatedCourse = _relatedCourses[index];
+              final relatedCourse = _relatedCourses[index];
+
+              // Localize related course titles/descriptions
+              final String relatedTitle = isSinhala ? relatedCourse.titleSi : relatedCourse.titleEn;
+              final String relatedDescription = isSinhala ? relatedCourse.descriptionSi : relatedCourse.descriptionEn;
 
               return CourseItem(
-                // Use mobile sizing for vertical list layout
                 isMobile: true,
                 imageUrl: relatedCourse.imageUrl,
-                title: relatedCourse.title,
-                description: relatedCourse.description,
+                // 🎯 Use localized related course content
+                title: relatedTitle,
+                description: relatedDescription,
                 onTap: () {
-                  // Navigate to the detail page for the related course
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CoursePage(course: relatedCourse),
+                      builder: (context) => CoursePage(
+                        course: relatedCourse,
+                        IsSinhala: isSinhala, // Use isSinhala, assuming CoursePage uses this case
+                      ),
                     ),
                   );
                 },
               );
             },
           ),
-          const SizedBox(height: 50), // Extra space at the bottom
+          const SizedBox(height: 50),
         ],
       ),
     );
   }
 }
-
 
 // --- MAIN COURSE PAGE (Stateful structure provided by user) ---
 
@@ -180,7 +214,9 @@ class CoursePage extends StatefulWidget {
   // 💡 MANDATORY: Accepts the specific course data
   final Course course;
 
-  const CoursePage({super.key, required this.course});
+  final bool IsSinhala;
+
+  const CoursePage({super.key, required this.course, required this.IsSinhala,});
 
   @override
   State<CoursePage> createState() => _CoursePageState();
@@ -239,7 +275,7 @@ class _CoursePageState extends State<CoursePage> {
                   // 2. The main course content
                   SliverToBoxAdapter(
                     // 💡 Inject dynamic content here
-                    child: CourseDetailPageContent(course: widget.course),
+                    child: CourseDetailPageContent(course: widget.course,isSinhala: widget.IsSinhala,),
                   ),
 
                 ],
@@ -249,14 +285,16 @@ class _CoursePageState extends State<CoursePage> {
 
           // Custom AppBar (fixed on top of the content)
           // MyAppBar must be after the CustomScrollView in the Stack to overlay it
-          MyAppBar(drawerNotifier: drawerNotifier),
+         // MyAppBar(drawerNotifier: drawerNotifier),
         ],
       ),
     );
   }
 }
 
+
 class RelatedCourseListDesktopMode extends StatelessWidget {
+  // Course object now contains the 'videos' (formerly subCourses) list.
   final Course course;
 
   const RelatedCourseListDesktopMode({
@@ -264,27 +302,23 @@ class RelatedCourseListDesktopMode extends StatelessWidget {
     required this.course,
   });
 
-  // Show ALL courses (for testing)
-  List<Course> get _relatedCourseData {
-    return AllcourseData.allCourses.where((c) => c.id == course.id).take(10).toList();
-  }
+  // Handle tap: free → YouTube / paid → Payment
+  Future<void> _handleSubCourseTap(BuildContext context, Videos item) async {
+    // This logic remains the same, assuming 'Videos' model has 'isPaid' and 'youtubeUrl'.
+    // Ensure LaunchMode and launchUrlString are imported.
 
-  // Handle course tap: YouTube for free, payment for paid
-  Future<void> _handleCourseTap(BuildContext context, Course item) async {
     if (item.isPaid) {
-      const paymentUrl = "https://your-payment-portal.com"; // replace with your payment link
-      if (kIsWeb) {
-        html.window.open(paymentUrl, '_blank');
-      } else {
-        if (!await launchUrlString(paymentUrl, mode: LaunchMode.externalApplication)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Could not open payment portal")),
-          );
-        }
+      const paymentUrl = "https://your-payment-portal.com"; // Replace
+
+      if (!await launchUrlString(paymentUrl,
+          mode: LaunchMode.externalApplication)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not open payment portal")),
+        );
       }
     } else {
-      // Free course → open YouTube
-      if (!await launchUrlString(item.youtubeUrl, mode: LaunchMode.externalApplication)) {
+      if (!await launchUrlString(item.youtubeUrl,
+          mode: LaunchMode.externalApplication)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Could not open YouTube video")),
         );
@@ -297,55 +331,72 @@ class RelatedCourseListDesktopMode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    final isSinhala = locale.languageCode == 'si';
     const int itemsPerRow = 3;
 
-    final courses = _relatedCourseData;
+    // 1. MODIFIED: Use the 'videos' property.
+    final List<Videos> videos = course.videos;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
       child: Column(
         children: [
-          if (courses.isEmpty)
-            const Text("No courses found", style: TextStyle(color: Colors.red)),
+          if (videos.isEmpty)
+            Text(
+              isSinhala
+                  ? "මෙම පාඨමාලාවේ උප පාඨමාලා නොමැත"
+                  : "No sub-courses available",
+              style: const TextStyle(color: Colors.red),
+            ),
 
-          for (int i = 0; i < courses.length; i += itemsPerRow)
+          // GRID UI
+          for (int i = 0; i < videos.length; i += itemsPerRow)
             Padding(
               padding: EdgeInsets.only(
-                bottom: i + itemsPerRow < courses.length ? rowSpacing : 0,
+                bottom: i + itemsPerRow < videos.length ? rowSpacing : 0,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: List.generate(itemsPerRow, (index) {
                   final dataIndex = i + index;
 
-                  if (dataIndex < courses.length) {
-                    final item = courses[dataIndex];
+                  if (dataIndex < videos.length) {
+                    final Videos item = videos[dataIndex];
+
+                    // 2. MODIFIED: Select the correct localized title and description
+                    final String localizedTitle = isSinhala ? item.titleSi : item.titleEn;
+                    final String localizedDescription = isSinhala ? item.descriptionSi : item.descriptionEn;
+
 
                     return Expanded(
                       child: Padding(
                         padding: EdgeInsets.only(
-                            right: index < itemsPerRow - 1 ? columnSpacing : 0),
+                          right: index < itemsPerRow - 1 ? columnSpacing : 0,
+                        ),
                         child: Stack(
                           children: [
                             CourseItem(
                               isMobile: false,
                               imageUrl: item.imageUrl,
-                              title: item.title,
-                              description: item.description,
-                              onTap: () => _handleCourseTap(context, item),
+                              // 3. MODIFIED: Pass localized content
+                              title: localizedTitle,
+                              description: localizedDescription,
+                              onTap: () => _handleSubCourseTap(context, item),
                             ),
 
-                            // === Beautiful Paid Badge ===
+                            // Paid badge
                             if (item.isPaid)
                               Positioned(
                                 top: 10,
                                 left: 10,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: Colors.redAccent.withOpacity(0.85),
                                     borderRadius: BorderRadius.circular(8),
-                                    boxShadow: [
+                                    boxShadow: const [
                                       BoxShadow(
                                         color: Colors.black26,
                                         blurRadius: 4,
@@ -354,12 +405,15 @@ class RelatedCourseListDesktopMode extends StatelessWidget {
                                     ],
                                   ),
                                   child: Row(
-                                    children: const [
-                                      Icon(Icons.lock, color: Colors.white, size: 16),
-                                      SizedBox(width: 6),
+                                    children: [
+                                      const Icon(Icons.lock,
+                                          color: Colors.white, size: 16),
+                                      const SizedBox(width: 6),
                                       Text(
-                                        "Paid Video",
-                                        style: TextStyle(
+                                        isSinhala
+                                            ? "ගෙවූ වීඩියෝ"
+                                            : "Paid Video",
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
@@ -371,7 +425,6 @@ class RelatedCourseListDesktopMode extends StatelessWidget {
                               ),
                           ],
                         ),
-
                       ),
                     );
                   } else {
@@ -386,6 +439,9 @@ class RelatedCourseListDesktopMode extends StatelessWidget {
   }
 }
 
+
+
+
 class RelatedCourseListMobileMode extends StatelessWidget {
   final Course course;
 
@@ -394,15 +450,9 @@ class RelatedCourseListMobileMode extends StatelessWidget {
     required this.course,
   });
 
-  // Show ALL courses (testing)
-  List<Course> get _relatedFlutterCourses {
-    return AllcourseData.allCourses
-        .where((c) => c.id == course.id)
-        .take(10)
-        .toList();
-  }
-
-  Future<void> _handleCourseTap(BuildContext context, Course item) async {
+  // Handle tap: free → YouTube / paid → Payment
+  Future<void> _handleSubCourseTap(BuildContext context, Videos item) async {
+    // Assuming the Videos model has isPaid and youtubeUrl properties
     if (item.isPaid) {
       const paymentUrl = "https://your-payment-portal.com";
 
@@ -414,7 +464,7 @@ class RelatedCourseListMobileMode extends StatelessWidget {
       return;
     }
 
-    // free → YouTube
+    // Free → YouTube
     if (!await launchUrlString(item.youtubeUrl, mode: LaunchMode.externalApplication)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Could not open YouTube video")),
@@ -427,32 +477,42 @@ class RelatedCourseListMobileMode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const int itemsPerRow = 2; // Mobile grid
-    final courses = _relatedFlutterCourses;
+    const int itemsPerRow = 2; // Mobile grid (Matching image c5305d)
+    final locale = Localizations.localeOf(context);
+    final isSinhala = locale.languageCode == 'si';
+
+    // Use the 'videos' list from the passed Course object
+    final List<Videos> videos = course.videos;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       child: Column(
         children: [
-          if (courses.isEmpty)
-            const Text(
-              "No courses found",
-              style: TextStyle(color: Colors.red),
+          if (videos.isEmpty) // Check the videos list
+            Text(
+              isSinhala
+                  ? "මෙම පාඨමාලාවේ උප පාඨමාලා නොමැත"
+                  : "No sub-courses available",
+              style: const TextStyle(color: Colors.red),
             ),
 
-          // --- GRID LOOP ---
-          for (int i = 0; i < courses.length; i += itemsPerRow)
+          // --- GRID LOOP (Creates 2 items per row) ---
+          for (int i = 0; i < videos.length; i += itemsPerRow)
             Padding(
               padding: EdgeInsets.only(
-                bottom: (i + itemsPerRow < courses.length) ? rowSpacing : 0,
+                bottom: (i + itemsPerRow < videos.length) ? rowSpacing : 0,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: List.generate(itemsPerRow, (index) {
                   final dataIndex = i + index;
 
-                  if (dataIndex < courses.length) {
-                    final item = courses[dataIndex];
+                  if (dataIndex < videos.length) {
+                    final Videos item = videos[dataIndex];
+
+                    // Select the correct localized title and description
+                    final String localizedTitle = isSinhala ? item.titleSi : item.titleEn;
+                    final String localizedDescription = isSinhala ? item.descriptionSi : item.descriptionEn;
 
                     return Expanded(
                       child: Padding(
@@ -460,19 +520,19 @@ class RelatedCourseListMobileMode extends StatelessWidget {
                           right: index < itemsPerRow - 1 ? columnSpacing : 0,
                         ),
 
-                        // ✔ Stack sits inside BEAUTIFUL CARD
+                        // ✔ STYLED MOBILE CARD CONTAINER
                         child: _MobileCourseCard(
                           child: Stack(
                             children: [
                               CourseItem(
                                 isMobile: true,
                                 imageUrl: item.imageUrl,
-                                title: item.title,
-                                description: item.description,
-                                onTap: () => _handleCourseTap(context, item),
+                                title: localizedTitle,
+                                description: localizedDescription,
+                                onTap: () => _handleSubCourseTap(context, item),
                               ),
 
-                              // ---- BEAUTIFUL PAID BADGE ----
+                              // ---- GOLD PAID BADGE (Matching image c5305d) ----
                               if (item.isPaid)
                                 Positioned(
                                   top: 8,
@@ -490,17 +550,19 @@ class RelatedCourseListMobileMode extends StatelessWidget {
                                         ],
                                       ),
                                       borderRadius: BorderRadius.circular(8),
-                                      boxShadow: [
+                                      boxShadow: const [
                                         BoxShadow(
                                           color: Colors.black26,
                                           blurRadius: 4,
-                                          offset: const Offset(2, 2),
+                                          offset: Offset(2, 2),
                                         ),
                                       ],
                                     ),
-                                    child: const Text(
-                                      "PAID",
-                                      style: TextStyle(
+                                    child: Text(
+                                      isSinhala
+                                          ? "ගෙවූ වීඩියෝව"
+                                          : "PAID",
+                                      style: const TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black,
@@ -556,6 +618,8 @@ class _MobileCourseCard extends StatelessWidget {
     );
   }
 }
+
+
 
 
 class AllCourseListAccessPoint extends StatelessWidget {
